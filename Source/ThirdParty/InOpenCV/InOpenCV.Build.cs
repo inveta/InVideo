@@ -3,9 +3,9 @@ using System;
 using System.IO;
 using UnrealBuildTool;
 
-public class OpenCV : ModuleRules
+public class InOpenCV : ModuleRules
 {
-  public OpenCV(ReadOnlyTargetRules Target) : base(Target)
+  public InOpenCV(ReadOnlyTargetRules Target) : base(Target)
   {
     Type = ModuleType.External;
 
