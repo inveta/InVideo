@@ -42,7 +42,7 @@ public class InVideo : ModuleRules
         "Engine",
         "RHI",
         "RenderCore",
-
+        "InputCore"
 
       }
       );

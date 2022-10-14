@@ -18,7 +18,10 @@
 		{
 			"Name": "InVideo",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"WhitelistPlatforms": [
+				"Win64"
+			]
 		}
 	]
 }
