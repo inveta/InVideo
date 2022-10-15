@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "HAL/Runnable.h"
+#include "Containers/Queue.h"
+
 #include "PreOpenCVHeaders.h"
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -13,7 +16,7 @@
 #include "InSceneRecord.generated.h"
 
 UCLASS()
-class INVIDEO_API AInSceneRecord : public AActor
+class INVIDEO_API AInSceneRecord : public AActor, public FRunnable
 {
 	GENERATED_BODY()
 	
@@ -31,6 +34,12 @@ public:
 
 	void OnRequestFrame();
 	void HandleFrameData(TArray<FColor> Bitmap, int32 x, int32 y);
+public:
+	bool Init() override;
+	uint32 Run() override;
+	void Stop() override;
+	void Exit() override;
+
 private:
 	bool m_IsRecording = false;
 	FString m_FilePath;
@@ -44,6 +53,12 @@ private:
 	{
 	public:
 		cv::VideoWriter m_VideoWriter;
+		TQueue<cv::Mat> m_ImageQueue;
 	};
 	WrapOpenCv* m_WrapOpenCv = nullptr;
+
+	FRunnableThread* m_Thread = nullptr;
+	TAtomic<bool> m_Stopping = false;
+
+	
 };
