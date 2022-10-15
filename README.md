@@ -22,5 +22,5 @@
 ![stopplay](./Images/stopplay.jpg) 
 
 ## 2、运行时输出mp4
-
+![outputmp4](./Images/outputmp4.jpg) 
 
