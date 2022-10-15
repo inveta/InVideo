@@ -14,18 +14,7 @@ AInSceneRecord::AInSceneRecord()
 
 void AInSceneRecord::Destroyed()
 {
-	if (nullptr != m_ImageBuf)
-	{
-		delete[] m_ImageBuf;
-		m_ImageBuf = nullptr;
-	}
-	if (nullptr != m_WrapOpenCv)
-	{
-		m_WrapOpenCv->m_VideoWriter.release();
-		delete m_WrapOpenCv;
-		m_WrapOpenCv = nullptr;
-	}
-	
+	StoptRecord();
 }
 void AInSceneRecord::StartRecord(const FString FilePath, const int Fps)
 {
@@ -85,11 +74,22 @@ void AInSceneRecord::StartRecord(const FString FilePath, const int Fps)
 void AInSceneRecord::StoptRecord()
 {
 	UE_LOG(LogTemp, Log, TEXT("AInSceneRecord StoptRecord "));
+
 	if (false == m_IsRecording)
 	{
 		UE_LOG(LogTemp, Error, TEXT("AInSceneRecord StoptRecord IsRecording false"));
 		return;
 	}
+	m_IsRecording = false;
+
+	m_Stopping = true;
+	if (nullptr != m_Thread)
+	{
+		m_Thread->Kill();
+		delete m_Thread;
+		m_Thread = nullptr;
+	}
+
 	GetWorld()->GetTimerManager().ClearTimer(m_TimeHandle);
 
 	if (nullptr != m_ImageBuf)
@@ -98,6 +98,13 @@ void AInSceneRecord::StoptRecord()
 		m_ImageBuf = nullptr;
 	}
 	m_WrapOpenCv->m_VideoWriter.release();
+
+	if (nullptr != m_WrapOpenCv)
+	{
+		m_WrapOpenCv->m_VideoWriter.release();
+		delete m_WrapOpenCv;
+		m_WrapOpenCv = nullptr;
+	}
 }
 
 void AInSceneRecord::OnRequestFrame()
@@ -157,6 +164,42 @@ void AInSceneRecord::HandleFrameData(TArray<FColor> Bitmap, int32 x, int32 y)
 		UE_LOG(LogTemp, Error, TEXT("AInSceneRecord m_VideoWriter isOpened"));
 		return;
 	}
+	if (nullptr == m_Thread)
+	{
+		m_Thread = FRunnableThread::Create(this, TEXT("SceneRecord Thread"));
+	}
 	cv::Mat img(m_ImageY,m_ImageX,CV_8UC3, (unsigned char*)m_ImageBuf);
-	m_WrapOpenCv->m_VideoWriter.write(img);
+	auto newImg = img.clone();
+	m_WrapOpenCv->m_ImageQueue.Enqueue(newImg);
+}
+
+bool AInSceneRecord::Init()
+{
+	return true;
+}
+uint32 AInSceneRecord::Run()
+{
+	float SleepSecond = 1 / 50;
+	UE_LOG(LogTemp, Log, TEXT("AInSceneRecord open Enter"));
+	while (false == m_Stopping)
+	{
+		if (false == m_WrapOpenCv->m_ImageQueue.IsEmpty())
+		{
+			cv::Mat img;
+			m_WrapOpenCv->m_ImageQueue.Dequeue(img);
+			m_WrapOpenCv->m_VideoWriter.write(img);
+			continue;
+		}
+		FPlatformProcess::Sleep(SleepSecond);
+	}
+	UE_LOG(LogTemp, Log, TEXT("AInSceneRecord Run END"));
+	return 0;
+}
+void AInSceneRecord::Exit()
+{
+
+}
+void AInSceneRecord::Stop()
+{
+
 }
