@@ -53,7 +53,7 @@ private:
 	{
 	public:
 		cv::VideoWriter m_VideoWriter;
-		TQueue<cv::Mat> m_ImageQueue;
+		TQueue<TArray<FColor>> m_ImageQueue;
 	};
 	WrapOpenCv* m_WrapOpenCv = nullptr;
 
