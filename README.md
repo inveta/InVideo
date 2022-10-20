@@ -22,5 +22,8 @@
 ![stopplay](./Images/stopplay.jpg) 
 
 ## 2、运行时输出mp4
+第一步设置默认viewportclient  
+![viewportclient](./Images/ViewportClient.jpg) 
+开始录像示例  
 ![outputmp4](./Images/outputmp4.jpg) 
 
