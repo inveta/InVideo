@@ -150,27 +150,18 @@ void AInSceneRecord::HandleFrameData(TArray<FColor> Bitmap, int32 x, int32 y)
 		m_WrapOpenCv->m_VideoWriter.open(cvFilePath, cv::VideoWriter::fourcc('X', 'V', 'I', 'D'), m_Fps, cv::Size(m_ImageX, m_ImageY));
 	}
 
-	int count = 0;
-	for (int i = 0; i < Bitmap.Num(); i++)
-	{
-		m_ImageBuf[count] = Bitmap[i].B;
-		m_ImageBuf[count + 1] = Bitmap[i].G;
-		m_ImageBuf[count + 2] = Bitmap[i].R;
-		count += 3;
-	}
-	
 	if (false == m_WrapOpenCv->m_VideoWriter.isOpened())
 	{
 		UE_LOG(LogTemp, Error, TEXT("AInSceneRecord m_VideoWriter isOpened"));
 		return;
 	}
+
 	if (nullptr == m_Thread)
 	{
 		m_Thread = FRunnableThread::Create(this, TEXT("SceneRecord Thread"));
 	}
-	cv::Mat img(m_ImageY,m_ImageX,CV_8UC3, (unsigned char*)m_ImageBuf);
-	auto newImg = img.clone();
-	m_WrapOpenCv->m_ImageQueue.Enqueue(newImg);
+
+	m_WrapOpenCv->m_ImageQueue.Enqueue(Bitmap);
 }
 
 bool AInSceneRecord::Init()
@@ -185,8 +176,20 @@ uint32 AInSceneRecord::Run()
 	{
 		if (false == m_WrapOpenCv->m_ImageQueue.IsEmpty())
 		{
-			cv::Mat img;
-			m_WrapOpenCv->m_ImageQueue.Dequeue(img);
+			TArray<FColor> Bitmap;
+			m_WrapOpenCv->m_ImageQueue.Dequeue(Bitmap);
+
+			int count = 0;
+			for (int i = 0; i < Bitmap.Num(); i++)
+			{
+				m_ImageBuf[count] = Bitmap[i].B;
+				m_ImageBuf[count + 1] = Bitmap[i].G;
+				m_ImageBuf[count + 2] = Bitmap[i].R;
+				count += 3;
+			}
+
+			cv::Mat img(m_ImageY, m_ImageX, CV_8UC3, (unsigned char*)m_ImageBuf);
+
 			m_WrapOpenCv->m_VideoWriter.write(img);
 			continue;
 		}
