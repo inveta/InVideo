@@ -202,7 +202,7 @@ void UInVideoWidget::UpdateTextureRegions(UTexture2D* Texture, int32 MipIndex, u
 		RegionData->Texture2DResource = m_Texture2DResource;
 		RegionData->MipIndex = MipIndex;
 		RegionData->NumRegions = NumRegions;
-		RegionData->Regions = Regions;
+		RegionData->Regions = new FUpdateTextureRegion2D(*Regions);
 		RegionData->SrcPitch = SrcPitch;
 		RegionData->SrcBpp = SrcBpp;
 		RegionData->SrcData = SrcData;
@@ -227,9 +227,11 @@ void UInVideoWidget::UpdateTextureRegions(UTexture2D* Texture, int32 MipIndex, u
 			}
 			if (bFreeData)
 			{
-				FMemory::Free(RegionData->Regions);
-				FMemory::Free(RegionData->SrcData);
+				//FMemory::Free(RegionData->Regions);
+				//FMemory::Free(RegionData->SrcData);
+				
 			}
+			delete RegionData->Regions;
 			delete RegionData;
 			});
 	}
