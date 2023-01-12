@@ -44,7 +44,6 @@ private:
 	bool m_IsRecording = false;
 	FString m_FilePath;
 	int m_Fps = 0;
-	FTimerHandle m_TimeHandle;
 	char* m_ImageBuf = nullptr;
 	int32 m_ImageX = 0;
 	int32 m_ImageY = 0;
