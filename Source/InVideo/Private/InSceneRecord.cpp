@@ -68,12 +68,23 @@ void AInSceneRecord::StartRecord(const FString FilePath, const int Fps)
 		m_WrapOpenCv = new WrapOpenCv();
 	}
 
-	GetWorld()->GetTimerManager().SetTimer(m_TimeHandle,this, &AInSceneRecord::OnRequestFrame,1.0f/ Fps, true, 0);
+	ViewPortClient->StartRecord(Fps);
 }
 
 void AInSceneRecord::StoptRecord()
 {
 	UE_LOG(LogTemp, Log, TEXT("AInSceneRecord StoptRecord "));
+
+	auto world = GetWorld();
+	if (nullptr != world)
+	{
+		UInRecordGameViewportClient* ViewPortClient = Cast<UInRecordGameViewportClient>(
+			world->GetGameViewport());
+		if (nullptr != ViewPortClient)
+		{
+			ViewPortClient->StopRecord();
+		}
+	}
 
 	if (false == m_IsRecording)
 	{
@@ -90,8 +101,6 @@ void AInSceneRecord::StoptRecord()
 		m_Thread = nullptr;
 	}
 
-	GetWorld()->GetTimerManager().ClearTimer(m_TimeHandle);
-
 	if (nullptr != m_ImageBuf)
 	{
 		delete[] m_ImageBuf;
@@ -107,25 +116,6 @@ void AInSceneRecord::StoptRecord()
 	}
 }
 
-void AInSceneRecord::OnRequestFrame()
-{
-	auto world = GetWorld();
-	if (nullptr == world)
-	{
-		UE_LOG(LogTemp, Error, TEXT("AInSceneRecord OnRequestFrame GetWorld false"));
-		return;
-	}
-
-	UInRecordGameViewportClient* ViewPortClient = Cast<UInRecordGameViewportClient>(
-		world->GetGameViewport());
-
-	if (nullptr == ViewPortClient)
-	{
-		UE_LOG(LogTemp, Error, TEXT("AInSceneRecord OnRequestFrame UInRecordGameViewportClient nullptr"));
-		return;
-	}
-	ViewPortClient->RequestFrame();
-}
 void AInSceneRecord::HandleFrameData(TArray<FColor> Bitmap, int32 x, int32 y)
 {
 	int length = Bitmap.Num() * 3;

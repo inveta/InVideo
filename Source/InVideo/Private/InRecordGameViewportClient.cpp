@@ -4,10 +4,19 @@
 #include "InRecordGameViewportClient.h"
 #include "Slate/SceneViewport.h"
 
-void UInRecordGameViewportClient::RequestFrame()
+
+void UInRecordGameViewportClient::StartRecord(const int Fps)
 {
 	m_CanRecord = true;
+	m_LastTime = FDateTime::Now().GetTimeOfDay().GetTotalMilliseconds();
+	m_FpsInterval = 1000.0 / Fps;
 }
+
+void UInRecordGameViewportClient::StopRecord()
+{
+	m_CanRecord = false;
+}
+
 
 void UInRecordGameViewportClient::Draw(FViewport* InViewport, FCanvas* SceneCanvas)
 {
@@ -17,7 +26,13 @@ void UInRecordGameViewportClient::Draw(FViewport* InViewport, FCanvas* SceneCanv
 	{
 		return;
 	}
-	m_CanRecord = false;
+
+	auto nowTime = FDateTime::Now().GetTimeOfDay().GetTotalMilliseconds();
+	if ((nowTime - m_LastTime)< m_FpsInterval)
+	{
+		return;
+	}
+	m_LastTime = nowTime;
 
 	auto SceneViewport = GetGameViewport();
 
