@@ -8,8 +8,6 @@
 void UInRecordGameViewportClient::StartRecord(const int Fps)
 {
 	m_CanRecord = true;
-	m_LastTime = FDateTime::Now().GetTimeOfDay().GetTotalMilliseconds();
-	m_FpsInterval = 1000.0 / Fps;
 }
 
 void UInRecordGameViewportClient::StopRecord()
@@ -26,13 +24,6 @@ void UInRecordGameViewportClient::Draw(FViewport* InViewport, FCanvas* SceneCanv
 	{
 		return;
 	}
-
-	auto nowTime = FDateTime::Now().GetTimeOfDay().GetTotalMilliseconds();
-	if ((nowTime - m_LastTime)< m_FpsInterval)
-	{
-		return;
-	}
-	m_LastTime = nowTime;
 
 	auto SceneViewport = GetGameViewport();
 
