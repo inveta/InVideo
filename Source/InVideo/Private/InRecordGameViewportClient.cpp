@@ -14,16 +14,25 @@ void UInRecordGameViewportClient::StopRecord()
 {
 	m_CanRecord = false;
 }
-
+void UInRecordGameViewportClient::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	if (false == m_CanRecord)
+	{
+		return;
+	}
+	m_TickRecord = true;
+}
 
 void UInRecordGameViewportClient::Draw(FViewport* InViewport, FCanvas* SceneCanvas)
 {
 	Super::Draw(InViewport, SceneCanvas);
 
-	if (false == m_CanRecord)
+	if (false == m_TickRecord)
 	{
 		return;
 	}
+	m_TickRecord = false;
 
 	auto SceneViewport = GetGameViewport();
 
