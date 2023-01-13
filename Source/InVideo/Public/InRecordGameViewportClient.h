@@ -23,6 +23,4 @@ public:
 	virtual void Draw(FViewport* InViewport, FCanvas* SceneCanvas) override;
 private:
 	bool m_CanRecord = false;
-	double m_LastTime;
-	double m_FpsInterval;
 };
