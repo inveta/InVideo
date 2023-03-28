@@ -21,8 +21,8 @@ public:
 	FFrameDelegate OnFrameData;
 
 	virtual void Draw(FViewport* InViewport, FCanvas* SceneCanvas) override;
-	virtual void Tick(float DeltaTime) override;
 private:
 	bool m_CanRecord = false;
-	bool m_TickRecord = false;
+	double  m_FpsInterval = 10.0;
+	double m_LastTime;
 };

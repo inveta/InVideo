@@ -8,31 +8,30 @@
 void UInRecordGameViewportClient::StartRecord(const int Fps)
 {
 	m_CanRecord = true;
+	m_FpsInterval = 1000.0 / Fps;
+	m_LastTime = FDateTime::Now().GetTimeOfDay().GetTotalMilliseconds();
 }
 
 void UInRecordGameViewportClient::StopRecord()
 {
 	m_CanRecord = false;
 }
-void UInRecordGameViewportClient::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-	if (false == m_CanRecord)
-	{
-		return;
-	}
-	m_TickRecord = true;
-}
 
 void UInRecordGameViewportClient::Draw(FViewport* InViewport, FCanvas* SceneCanvas)
 {
 	Super::Draw(InViewport, SceneCanvas);
 
-	if (false == m_TickRecord)
+	if (false == m_CanRecord)
 	{
 		return;
 	}
-	m_TickRecord = false;
+
+	auto nowTime = FDateTime::Now().GetTimeOfDay().GetTotalMilliseconds();
+	if ((nowTime - m_LastTime) < m_FpsInterval)
+	{
+		return;
+	}
+	m_LastTime = nowTime;
 
 	auto SceneViewport = GetGameViewport();
 
