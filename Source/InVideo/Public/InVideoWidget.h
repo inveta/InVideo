@@ -28,9 +28,10 @@ class INVIDEO_API UInVideoWidget : public UUserWidget ,public FRunnable
 public:
 	DECLARE_DYNAMIC_DELEGATE(FDelegatePlaySucceeded);
 	DECLARE_DYNAMIC_DELEGATE(FDelegatePlayFailed);
+	DECLARE_DYNAMIC_DELEGATE(FDelegateFirstFrame);
 
 	UFUNCTION(BlueprintCallable, Category = "InVideo")
-    void StartPlay(const FString VideoURL, FDelegatePlayFailed Failed,
+    void StartPlay(const FString VideoURL, FDelegatePlayFailed Failed, FDelegateFirstFrame FirstFrame,
 		const bool RealMode = true,const int Fps = 25);
 
 	UFUNCTION(BlueprintCallable, Category = "InVideo")
@@ -54,6 +55,7 @@ private:
 	void UpdateTexture();
 	void UpdateTextureRegions(UTexture2D* Texture, int32 MipIndex, uint32 NumRegions, FUpdateTextureRegion2D* Regions, uint32 SrcPitch, uint32 SrcBpp, uint8* SrcData, bool bFreeData);
 	void NotifyFailed();
+	void NotifyFirstFrame();
 private:
 	FRunnableThread* m_Thread = nullptr;
 	TAtomic<bool> m_Stopping = false;
@@ -65,7 +67,8 @@ private:
 	FDateTime m_LastReadTime = FDateTime::Now();
 
 	FDelegatePlayFailed m_Failed;
-
+	FDelegateFirstFrame m_FirstFrame;
+	bool m_BFirstFrame = false;
 	class WrapOpenCv
 	{
 	public:
