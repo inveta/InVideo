@@ -59,6 +59,7 @@ uint32 UInVideoWidget::Run()
 		}
 		if (true == m_WrapOpenCv->m_Stream.read(m_WrapOpenCv->m_Frame))
 		{
+			NotifyFirstFrame();
 			UpdateTexture();
 		}
 		
@@ -75,7 +76,7 @@ void UInVideoWidget::Stop()
 
 }
 
-void UInVideoWidget::StartPlay(const FString VideoURL, FDelegatePlayFailed Failed,const bool RealMode , const int Fps)
+void UInVideoWidget::StartPlay(const FString VideoURL, FDelegatePlayFailed Failed, FDelegateFirstFrame FirstFrame,const bool RealMode , const int Fps)
 {
 	StopPlay();
 	m_Stopping = false;
@@ -84,7 +85,8 @@ void UInVideoWidget::StartPlay(const FString VideoURL, FDelegatePlayFailed Faile
 	m_Fps = Fps;
 	m_UpdateTime = 1000 / m_Fps;
 	m_Failed = Failed;
-
+	m_FirstFrame = FirstFrame;
+	m_BFirstFrame = false;
 	UE_LOG(LogTemp, Log, TEXT("UInVideoWidget StartPlay Enter"));
 	m_Thread = FRunnableThread::Create(this, TEXT("Video Thread"));
 	UE_LOG(LogTemp, Log, TEXT("UInVideoWidget StartPlay END"));
@@ -124,6 +126,20 @@ void UInVideoWidget::NotifyFailed()
 		{
 			if (Failed.IsBound())
 				Failed.Execute();
+		});
+}
+void UInVideoWidget::NotifyFirstFrame()
+{
+	if (m_BFirstFrame)
+	{
+		return;
+	}
+	m_BFirstFrame = true;
+	FDelegateFirstFrame FirstFrame = m_FirstFrame;
+	AsyncTask(ENamedThreads::GameThread, [FirstFrame]()
+		{
+			if (FirstFrame.IsBound())
+				FirstFrame.Execute();
 		});
 }
 void UInVideoWidget::UpdateTexture()
