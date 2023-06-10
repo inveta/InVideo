@@ -7,39 +7,112 @@
 
 void UInVideoWidget::NativeConstruct()
 {
+	UE_LOG(LogTemp, Log, TEXT("UInVideoWidget NativeConstruct"));
 	Super::NativeConstruct();
 }
 void UInVideoWidget::NativeDestruct()
 {
+	UE_LOG(LogTemp, Log, TEXT("UInVideoWidget NativeDestruct"));
 	StopPlay();
 	Super::NativeDestruct();
 }
 
-bool UInVideoWidget::Init()
+
+void UInVideoWidget::StartPlay(const FString VideoURL, FDelegatePlayFailed Failed, FDelegateFirstFrame FirstFrame,const bool RealMode , const int Fps)
+{
+	StopPlay();
+	m_VideoPlayPtr = MakeUnique<VideoPlay>();
+	m_VideoPlayPtr->StartPlay(VideoURL, Failed, FirstFrame, RealMode, Fps,this);
+}
+void UInVideoWidget::StopPlay()
+{
+	if (m_VideoPlayPtr.Get() == nullptr)
+	{
+		return;
+	}
+	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [ptr = MoveTemp(m_VideoPlayPtr)]()
+		{
+		 ptr->StopPlay();
+		});
+}
+
+
+
+void VideoPlay::StartPlay(const FString VideoURL, FDelegatePlayFailed Failed, FDelegateFirstFrame FirstFrame, const bool RealMode, const int Fps, UInVideoWidget* widget)
+{
+	StopPlay();
+	m_widget = widget;
+	m_Stopping = false;
+	m_VideoURL = VideoURL;
+	m_RealMode = RealMode;
+	m_Fps = Fps;
+	m_UpdateTime = 1000 / m_Fps;
+	m_Failed = Failed;
+	m_FirstFrame = FirstFrame;
+	m_BFirstFrame = false;
+	UE_LOG(LogTemp, Log, TEXT("VideoPlay StartPlay Enter"));
+	m_Thread = FRunnableThread::Create(this, TEXT("Video Thread"));
+	UE_LOG(LogTemp, Log, TEXT("VideoPlay StartPlay END"));
+}
+void VideoPlay::StopPlay()
+{
+	UE_LOG(LogTemp, Log, TEXT("VideoPlay StopPlay Enter"));
+	m_Stopping = true;
+	if (nullptr != m_Thread)
+	{
+		m_Thread->Kill();
+		delete m_Thread;
+		m_Thread = nullptr;
+	}
+	if (nullptr != m_WrapOpenCv)
+	{
+		if (m_WrapOpenCv->m_Stream.isOpened())
+		{
+			m_WrapOpenCv->m_Stream.release();
+		}
+		delete m_WrapOpenCv;
+		m_WrapOpenCv = nullptr;
+	}
+	if (nullptr != m_VideoUpdateTextureRegion)
+	{
+		delete m_VideoUpdateTextureRegion;
+		m_VideoUpdateTextureRegion = nullptr;
+	}
+	AsyncTask(ENamedThreads::GameThread, [vt = VideoTexture]()
+		{
+			if (vt->IsValidLowLevel()) 
+			{
+				vt->RemoveFromRoot();
+			}
+		});
+	m_VideoSize = FVector2D(0, 0);
+	UE_LOG(LogTemp, Log, TEXT("UInVideoWidget StopPlay END"));
+}
+bool VideoPlay::Init()
 {
 	return true;
 }
-uint32 UInVideoWidget::Run()
+uint32 VideoPlay::Run()
 {
-	UE_LOG(LogTemp, Log, TEXT("UInVideoWidget open Enter"));
+	UE_LOG(LogTemp, Log, TEXT("VideoPlay open Enter"));
 	if (nullptr == m_WrapOpenCv)
 	{
 		m_WrapOpenCv = new WrapOpenCv();
 	}
 	if (false == m_WrapOpenCv->m_Stream.open(TCHAR_TO_UTF8(*m_VideoURL)))
 	{
-		UE_LOG(LogTemp, Error, TEXT("UInVideoWidget open url=%s"), *m_VideoURL);
+		UE_LOG(LogTemp, Error, TEXT("VideoPlay open url=%s"), *m_VideoURL);
 		NotifyFailed();
 		return -1;
 	}
-	UE_LOG(LogTemp, Log, TEXT("UInVideoWidget open END"));
+	UE_LOG(LogTemp, Log, TEXT("VideoPlay open END"));
 
-	UE_LOG(LogTemp, Log, TEXT("UInVideoWidget Run Enter"));
+	UE_LOG(LogTemp, Log, TEXT("VideoPlay Run Enter"));
 	while (false == m_Stopping)
 	{
 		if (false == m_WrapOpenCv->m_Stream.isOpened())
 		{
-			UE_LOG(LogTemp, Error, TEXT("UInVideoWidget Run isOpened"));
+			UE_LOG(LogTemp, Error, TEXT("VideoPlay Run isOpened"));
 			NotifyFailed();
 			return -1;
 		}
@@ -62,87 +135,41 @@ uint32 UInVideoWidget::Run()
 			NotifyFirstFrame();
 			UpdateTexture();
 		}
-		
+
 	}
-	UE_LOG(LogTemp, Log, TEXT("UInVideoWidget Run END"));
+	UE_LOG(LogTemp, Log, TEXT("VideoPlay Run END"));
 	return 0;
 }
-void UInVideoWidget::Exit()
+void VideoPlay::Exit()
 {
 
 }
-void UInVideoWidget::Stop()
+void VideoPlay::Stop()
 {
 
 }
-
-void UInVideoWidget::StartPlay(const FString VideoURL, FDelegatePlayFailed Failed, FDelegateFirstFrame FirstFrame,const bool RealMode , const int Fps)
+void VideoPlay::NotifyFailed()
 {
-	StopPlay();
-	m_Stopping = false;
-	m_VideoURL = VideoURL;
-	m_RealMode = RealMode;
-	m_Fps = Fps;
-	m_UpdateTime = 1000 / m_Fps;
-	m_Failed = Failed;
-	m_FirstFrame = FirstFrame;
-	m_BFirstFrame = false;
-	UE_LOG(LogTemp, Log, TEXT("UInVideoWidget StartPlay Enter"));
-	m_Thread = FRunnableThread::Create(this, TEXT("Video Thread"));
-	UE_LOG(LogTemp, Log, TEXT("UInVideoWidget StartPlay END"));
-}
-void UInVideoWidget::StopPlay()
-{
-	UE_LOG(LogTemp, Log, TEXT("UInVideoWidget StopPlay Enter"));
-	m_Stopping = true;
-	if (nullptr != m_Thread)
-	{
-		m_Thread->Kill();
-		delete m_Thread;
-		m_Thread = nullptr;
-	}
-	if (nullptr != m_WrapOpenCv)
-	{
-		if (m_WrapOpenCv->m_Stream.isOpened())
-		{
-			m_WrapOpenCv->m_Stream.release();
-		}
-		delete m_WrapOpenCv;
-		m_WrapOpenCv = nullptr;
-	}
-	
-	if (nullptr != m_VideoUpdateTextureRegion)
-	{
-		delete m_VideoUpdateTextureRegion;
-		m_VideoUpdateTextureRegion = nullptr;
-	}
-	m_VideoSize = FVector2D(0, 0);
-	UE_LOG(LogTemp, Log, TEXT("UInVideoWidget StopPlay END"));
-}
-void UInVideoWidget::NotifyFailed()
-{
-	FDelegatePlayFailed Failed = m_Failed;
-	AsyncTask(ENamedThreads::GameThread, [Failed]()
+	AsyncTask(ENamedThreads::GameThread, [Failed= m_Failed]()
 		{
 			if (Failed.IsBound())
 				Failed.Execute();
 		});
 }
-void UInVideoWidget::NotifyFirstFrame()
+void VideoPlay::NotifyFirstFrame()
 {
 	if (m_BFirstFrame)
 	{
 		return;
 	}
 	m_BFirstFrame = true;
-	FDelegateFirstFrame FirstFrame = m_FirstFrame;
-	AsyncTask(ENamedThreads::GameThread, [FirstFrame]()
+	AsyncTask(ENamedThreads::GameThread, [FirstFrame = m_FirstFrame]()
 		{
 			if (FirstFrame.IsBound())
 				FirstFrame.Execute();
 		});
 }
-void UInVideoWidget::UpdateTexture()
+void VideoPlay::UpdateTexture()
 {
 	if (nullptr == VideoTexture || m_VideoSize.X != m_WrapOpenCv->m_Frame.cols || m_VideoSize.Y != m_WrapOpenCv->m_Frame.rows)
 	{
@@ -151,16 +178,17 @@ void UInVideoWidget::UpdateTexture()
 		m_VideoSize = FVector2D(m_WrapOpenCv->m_Frame.cols, m_WrapOpenCv->m_Frame.rows);
 		FEvent* SyncEvent = FGenericPlatformProcess::GetSynchEventFromPool(false);
 		AsyncTask(ENamedThreads::GameThread, [this, SyncEvent]()
-		{
-			VideoTexture = UTexture2D::CreateTransient(m_VideoSize.X, m_VideoSize.Y);
-			if (VideoTexture)
 			{
-				VideoTexture->UpdateResource();
-			}
-			m_Texture2DResource = (FTexture2DResource*)VideoTexture->GetResource();
-			UE_LOG(LogTemp, Log, TEXT("UInVideoWidget UpdateTexture CreateTransient"));
-			SyncEvent->Trigger();
-		});
+				VideoTexture = UTexture2D::CreateTransient(m_VideoSize.X, m_VideoSize.Y);
+				if (VideoTexture)
+				{
+					VideoTexture->UpdateResource();
+				}
+				VideoTexture->AddToRoot();
+				m_Texture2DResource = (FTexture2DResource*)VideoTexture->GetResource();
+				UE_LOG(LogTemp, Log, TEXT("UInVideoWidget UpdateTexture CreateTransient"));
+				SyncEvent->Trigger();
+			});
 		SyncEvent->Wait();
 		FGenericPlatformProcess::ReturnSynchEventToPool(SyncEvent);
 
@@ -191,19 +219,27 @@ void UInVideoWidget::UpdateTexture()
 			Data[i].R = m_WrapOpenCv->m_Frame.data[i * 3 + 2];
 		}
 	}
-	UpdateTextureRegions(VideoTexture,(int32)0, (uint32)1, m_VideoUpdateTextureRegion, (uint32)(4 * m_VideoSize.X), (uint32)4, (uint8*)Data.GetData(), false);
-	
-	if (nullptr == ImageVideo)
-	{
-		return;
-	}
-	AsyncTask(ENamedThreads::GameThread, [this]()
-	{
-		ImageVideo->SetBrushFromTexture(VideoTexture);
-	});
+	UpdateTextureRegions(VideoTexture, (int32)0, (uint32)1, m_VideoUpdateTextureRegion, (uint32)(4 * m_VideoSize.X), (uint32)4, (uint8*)Data.GetData(), false);
+
+	AsyncTask(ENamedThreads::GameThread, [vt = VideoTexture, widget = m_widget]()
+		{
+			if (false == widget->IsValidLowLevel())
+			{
+				return;
+			}
+			if (nullptr == widget->ImageVideo)
+			{
+				return;
+			}
+			if (false == vt->IsValidLowLevel())
+			{
+				return;
+			}
+			widget->ImageVideo->SetBrushFromTexture(vt);
+		});
 
 }
-void UInVideoWidget::UpdateTextureRegions(UTexture2D* Texture, int32 MipIndex, uint32 NumRegions, FUpdateTextureRegion2D* Regions, uint32 SrcPitch, uint32 SrcBpp, uint8* SrcData, bool bFreeData)
+void VideoPlay::UpdateTextureRegions(UTexture2D* Texture, int32 MipIndex, uint32 NumRegions, FUpdateTextureRegion2D* Regions, uint32 SrcPitch, uint32 SrcBpp, uint8* SrcData, bool bFreeData)
 {
 	if (m_Texture2DResource)
 	{
@@ -249,7 +285,7 @@ void UInVideoWidget::UpdateTextureRegions(UTexture2D* Texture, int32 MipIndex, u
 			{
 				//FMemory::Free(RegionData->Regions);
 				//FMemory::Free(RegionData->SrcData);
-				
+
 			}
 			delete RegionData->Regions;
 			delete RegionData;
