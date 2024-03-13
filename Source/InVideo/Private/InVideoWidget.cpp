@@ -261,7 +261,8 @@ void VideoPlay::UpdateTextureRegions(UTexture2D* Texture, int32 MipIndex, uint32
 		RegionData->Regions = new FUpdateTextureRegion2D(*Regions);
 		RegionData->SrcPitch = SrcPitch;
 		RegionData->SrcBpp = SrcBpp;
-		RegionData->SrcData = SrcData;
+		RegionData->SrcData = new uint8[Regions->Width* Regions->Height*4];
+		memcpy(RegionData->SrcData, SrcData, Regions->Width* Regions->Height * 4);
 
 		ENQUEUE_RENDER_COMMAND(UpdateTextureRegionsData)([RegionData, bFreeData](FRHICommandListImmediate& RHICmdList) {
 
@@ -289,6 +290,7 @@ void VideoPlay::UpdateTextureRegions(UTexture2D* Texture, int32 MipIndex, uint32
 			}
 			delete RegionData->Regions;
 			delete RegionData;
+			delete[] RegionData->SrcData;
 			});
 	}
 }
