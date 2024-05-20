@@ -289,8 +289,8 @@ void VideoPlay::UpdateTextureRegions(UTexture2D* Texture, int32 MipIndex, uint32
 
 			}
 			delete RegionData->Regions;
-			delete RegionData;
 			delete[] RegionData->SrcData;
+			delete RegionData;
 			});
 	}
 }
