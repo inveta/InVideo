@@ -5,6 +5,14 @@
 1、基于 UE5 实现的 rtsp 的视频播放插件  
 2、基于 UE5 实现的运行时输出 mp4 文件
 
+## linux版本
+另外我们还推出了基于vlc的linux版本，欢迎加入知识星球获取。  
+https://www.bilibili.com/video/BV1iigeekE9P/?vd_source=bf9a6525b21d0736244d8689fc0940f0  
+
+需要获取源码 加入知识星球，这个插件同时支持linux和windows播放  
+https://t.zsxq.com/IXemd  
+
+另外知识星球还有海量博主的技术笔记  
 # 使用示例
 
 ## 1、视频播放示例
