@@ -5,6 +5,10 @@
 1、基于 UE5 实现的 rtsp 的视频播放插件  
 2、基于 UE5 实现的运行时输出 mp4 文件
 
+## 学习视频
+[(UE5)RTSP摄像头对接指南-实时获取监控画面](https://www.bilibili.com/video/BV1nM1gYEEWv/)  
+[(UE5)插件打包后无法运行解决方案](https://www.bilibili.com/video/BV16M1gY7EeK)  
+
 ## linux版本
 另外我们还推出了基于vlc的linux版本，欢迎加入知识星球获取。  
 https://www.bilibili.com/video/BV1iigeekE9P/?vd_source=bf9a6525b21d0736244d8689fc0940f0  
